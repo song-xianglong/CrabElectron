@@ -1,0 +1,10 @@
+\ Radio data of RX J1713.7-3946                                                                                                            
+\ Lazendic etal 2004
+\
+|   energy|         flux|flux_error_hi|flux_error_lo|
+|   double|       double|       double|       double|
+|       eV|erg / (cm2 s)|erg / (cm2 s)|erg / (cm2 s)|
+|     null|         null|         null|         null|
+
+ 5.928e-06  1.835871e-13  5.15571e-14    4.96090e-14
+ 9.984e-06  2.691332e-13  6.78667e-14    8.13732e-14

@@ -1,0 +1,58 @@
+
+
+I/ Introduction to NAIMA package:
+
+	NAIMA package is a package written in python that allows to fit gamma-ray data coming from
+	the emission of non-thermal particles.
+	
+	It proceeds following two steps:
+		1- Fit the data provided with a likelihood analysis.
+		2- Allows to plot the sepectral energy distribution (SED) and its different
+		components.
+		
+	An example will be provided to familiarize yourselves with the use of NAIMA.
+	
+	
+II/ Example: RXJ1713
+
+	Description: The source RXJ1713 is a SNR capable of accelerating leptons (e-/e+) 
+	which will emit photons in different energy ranges from radio to gamma-rays.
+	
+	In the directory "RXJ1713" different data files ".dat" and two python scripts have
+	been provided. This will serve to show how to use the NAIMA package.
+	
+	
+III/ Project: Fitting the multiwavelength data of the Crab nebula and extracting informations
+about the processes happening inside it
+
+	The Crab pulsar/nebula: The Crab pulsar is the most famous and most studied astrophysical
+	source. It The Crab pulsar is a very powerful pulsar formed after the supernova SN1054.
+	It has one of the highest spin-down powers ever measured and is able to accelerate
+	electrons and positrons until few PeV which emit photons from radio to gamma-rays via 
+	synchrotron radiation and inverse Compton scattering on different photon fields.
+	It is postulated that the electron spectrum has a break at $\gamma \approx 10^6$ and
+	another break at $\gamma \approx 10^9$ where $\gamma$ is the Lorentz factor.
+	
+	Purpose: Fit the crab multiwavelength data and derive its SED assuming different
+	shapes for electrons distribution, different photon fields as target for the inverse
+	Compton scattering and (may be) by adding a small hadronic component to the model.
+	
+	1- In the directory "crab_1_brokenPowerLaw" we have provided the multiwavelength data
+	of the Crab and two incomplete codes that you will have refine to derive the SED assuming
+	assuming a simple broken power law with exponential cutoff for the electron spectrum.
+	
+	2- In the directory "crab_2_BrokenPowerLaw_SSC" you are expected to fit the multwavelength
+	data of the Crab with a simple broken power-law with exponential cutoff and by taking
+	into account the inverse Compton scattering of the photoons emitted by synchrotron
+	radiation. Nothing is provided inside this directory.
+	
+	3- In the directory "crab_3_doubleBrokenPowerLaw" you are expected to fit the
+	multwavelength data of the Crab with a power-law with exponential cutoff having two
+	breaks. Nothing is provided inside this directory.
+	
+	4- In the directory "crab_4_doubleBrokenPowerLaw _protonComponent" you are expected to fit
+	the multiwavelength data of the Crab with a power-law with exponential cutoff having two
+	breaks plus a small hadronic (proton) component taking the form of a simple power-law with
+	exponential cutoff. The purpose here, is to account for the last data points with the
+	proton component to allow the electron spectrum to better fit the rest of the data.
+	Nothing is provided inside this directory.

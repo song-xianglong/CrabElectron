@@ -1,0 +1,148 @@
+#!/usr/bin/env python
+import astropy.units as u
+import numpy as np
+from astropy.io import ascii
+from astropy.constants import c
+
+import naima
+from naima.models import ExponentialCutoffPowerLaw, InverseCompton, Synchrotron, ExponentialCutoffBrokenPowerLaw, ExponentialCutoffDoubleBrokenPowerLaw, PionDecay
+
+#distance of Crab
+d = 2.0 * u.kpc
+
+
+# Do not touch this part: Start-------------------------------------------------------------------------------------------
+
+crab = ascii.read('crab_data_points.ecsv')
+radio = crab[0:18]
+micro = crab[18:62]
+uv = crab[62:86]
+soft_xray = crab[86:123]
+hard_xray = crab[123:154]
+gamma = crab[154:204]
+fermi = crab[204:226]
+vhe = crab[226:-1]
+
+# Do not touch this part: End---------------------------------------------------------------------------------------------
+
+## Model definition
+def ElectronSynIC(pars, data):
+
+    # Match parameters to ECPL properties, and give them the appropriate units
+    amplitude = 10 ** pars[0] / u.eV
+    e_break1 = (10 ** pars[1]) * u.TeV
+    e_break2 = (10 ** pars[2]) * u.TeV
+    alpha_1 = pars[3]
+    alpha_2 = pars[4]
+    alpha_3 = pars[5]
+    e_cutoff = (10 ** pars[6]) * u.TeV
+    B = pars[7] * u.uG
+
+    # Initialize instances of the particle distribution and radiative models
+    ECBPL = ExponentialCutoffDoubleBrokenPowerLaw(amplitude, 1.0 * u.TeV, e_break1, e_break2, alpha_1, alpha_2, alpha_3, e_cutoff)
+
+    eopts = {"Eemax": 50 * u.PeV, "Eemin": 0.1 * u.GeV}
+
+    # Compute IC on CMB and on a FIR component with values from GALPROP for the
+    # position of RXJ1713
+
+    SYN = Synchrotron(ECBPL, B = B, **eopts)
+
+    amplitude_p = (10 ** pars[8]) / u.eV
+    alpha_p = 2
+    e_cutoff_p = (10 ** pars[9]) * u.TeV
+
+    ECPL = ExponentialCutoffPowerLaw(amplitude_p, 1.0 * u.TeV, alpha_p, e_cutoff_p)
+
+    PD = PionDecay(ECPL, nh = 1 / u.cm ** 3, nuclear_enhancement = False)
+
+    Rpwn = 2.1 * u.pc
+    Esy = np.logspace(-7, 9, 100) * u.eV
+    Lsy = SYN.flux(Esy, distance=0 * u.cm)  # use distance 0 to get luminosity
+    phn_sy = Lsy / (4 * np.pi * Rpwn ** 2 * c) * 2.24
+
+    IC = InverseCompton(
+        ECBPL,
+        seed_photon_fields=[
+            "CMB",
+            ["FIR", 70 * u.K, 0.5 * u.eV / u.cm ** 3],
+            ["OPT", 5000 * u.K, 1.0 * u.eV / u.cm ** 3],
+            #["SSC", Esy, phn_sy],
+        ],
+        **eopts,
+    )
+
+    # compute flux at the energies given in data['energy']
+    model = IC.flux(data, distance = d) \
+          + SYN.flux(data, distance = d) \
+          + PD.flux(data, distance = d)
+    
+    # Compute the total energy in e/p above 1 GeV for this realization
+    We = IC.compute_We(Eemin = 1 * u.GeV)   
+
+    # The first array returned will be compared to the observed spectrum for
+    # fitting. All subsequent objects will be stored in the sampler metadata
+    # blobs.
+    return model, We
+
+
+## Prior definition
+def lnprior(pars):
+    """
+    Return probability of parameter values according to prior knowledge.
+    Parameter limits should be done here through uniform prior ditributions
+    """
+    # Limit norm and B to be positive
+    logprob = (
+        naima.uniform_prior(pars[0], 0.0, np.inf)
+        + naima.uniform_prior(pars[1], np.log10(0.1), np.log10(10))
+        + naima.uniform_prior(pars[2], np.log10(0.1), np.log10(200))
+        + naima.uniform_prior(pars[3], 0, 5)
+        + naima.uniform_prior(pars[4], 0, 5)
+        + naima.uniform_prior(pars[5], 0, 5)
+        + naima.uniform_prior(pars[6], np.log10(100), np.log10(3000))
+        + naima.uniform_prior(pars[7], 0, 100)
+        + naima.uniform_prior(pars[8], 0.0, np.inf)
+        + naima.uniform_prior(pars[9], np.log10(3000), np.log10(10000))
+    )
+    return logprob
+
+if __name__ == "__main__":
+
+    ## Set initial parameters and labels
+    # Estimate initial magnetic field and get value in uG
+    B0 = 2 * naima.estimate_B(soft_xray, vhe).to("uG").value
+
+    p0 = np.array((36.67, np.log10(0.265), np.log10(100), 1.5, 3.2, 3.4, np.log10(1863.0), B0, 35, np.log10(8000)))
+    labels = ["log10(norm)", "log10(e_break1)", "log10(e_break2)", "alpha_1", "alpha_2", "alpha_3", "log10(cutoff)", "B", "amplitude_p", "e_cutoff_p"]
+
+    ## Run sampler
+    sampler, pos = naima.run_sampler(
+        data_table=[radio, micro, uv, soft_xray, hard_xray, gamma, fermi, vhe],
+        p0=p0,
+        labels=labels,
+        model=ElectronSynIC,
+        prior=lnprior,
+        nwalkers=75,
+        nburn=20,
+        nrun=50,
+        threads=8,
+        prefit=True,
+        interactive=True,
+    )
+
+    ## Save run results to HDF5 file (can be read later with naima.read_run)
+    out_root = "SynIC.h5"
+    naima.save_run(out_root, sampler, compression=True, clobber=True)
+
+    ## Diagnostic plots
+    naima.save_diagnostic_plots(
+        out_root,
+        sampler,
+        sed=True,
+        last_step=True,
+        pdf=True,
+        blob_labels=["Spectrum", "$W_e$($E_e>1$ GeV)"]
+    )
+    naima.save_results_table(out_root, sampler, convert_log=True, last_step=False, include_blobs=True)
+
