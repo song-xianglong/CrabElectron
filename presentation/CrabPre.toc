@@ -1,5 +1,0 @@
-\beamer@sectionintoc {1}{Crab Nebula}{3}{0}{1}
-\beamer@sectionintoc {2}{Naima}{4}{0}{2}
-\beamer@sectionintoc {3}{Some Physics}{5}{0}{3}
-\beamer@sectionintoc {4}{Results from LHAASO}{6}{0}{4}
-\beamer@sectionintoc {5}{References}{10}{0}{5}
